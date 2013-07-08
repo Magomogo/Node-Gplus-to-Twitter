@@ -2,8 +2,9 @@ var request = require('request'),
     url = require('url'),
     htmlparser = require('htmlparser'),
     fs = require('fs'),
-    OAuth = require('oauth').OAuth
-    _ = require('underscore');
+    OAuth = require('oauth').OAuth,
+    _ = require('underscore'),
+    ent = require('ent');
 
 var config = {
     "latestDateFile" : "lastestPostedDate.txt",
@@ -64,31 +65,82 @@ function setLatestPostedItemDate(date){
     return true;
 }
 
+function contents(html) {
+    var handler = new htmlparser.DefaultHandler(),
+        parser = new htmlparser.Parser(handler),
+        textPart,
+        firstImage;
+
+    parser.parseComplete(html);
+
+    function extractText(siblings) {
+        var i, element, text = '', isBlockElement = false;
+        for (i = 0; i < siblings.length; i++) {
+            element = siblings[i];
+
+            if (element.type === 'text') {
+                text = text + element.data;
+            }
+
+            if (!firstImage && (element.type === 'tag') && (element.name === 'img')) {
+                firstImage = element.attribs.src;
+            }
+
+            if (element.children) {
+                isBlockElement = (element.type === 'tag') && (['div'].indexOf(element.name) !== -1);
+
+                text = text +
+                    (isBlockElement ? ' ' : '') +
+                    extractText(element.children) +
+                    (isBlockElement ? ' ' : '');
+            }
+        }
+        return text.replace(/^\s+|\s+$/, '');
+    }
+    textPart = extractText(handler.dom);
+
+    return {
+        "text": textPart.substr(0, 110),
+        "image": undefined //firstImage
+    };
+}
+
 // post item to twitter
 function publishToTwitter(item){
-    var tweet = item.description.substr(0, 110) + ' ' + item.link;
+    var contentsToTweet = contents(ent.decode(item.description)),
+        apiUri = 'http://api.twitter.com/1.1/statuses/update' + (contentsToTweet.image ? '_with_media' : '') + '.json',
+        status = {'status': contentsToTweet.text + ' ' + item.link};
+
+    if (contentsToTweet.image) {
+        // TODO load and post as multipart/form-data
+        status['media[]'] = contentsToTweet.image;
+    }
+
     console.log('publishing to twitter');
     oAuth.post(
-        'http://api.twitter.com/1.1/statuses/update.json',
+        apiUri,
         config.twitterAccessToken,
         config.twitterAccessTokenSecret,
-        {'status': tweet},
+        status,
         function(error, data) {
-             if(error) console.log(require('util').inspect(error))
-             //else console.log('succcess!' + data)
+            if(error) {
+                console.log(require('util').inspect(error));
+            }
+            else {
+                console.log('Posted: ' + contentsToTweet.text);
+            }
         }
     );
 }
 
-// looping on the server (every second)
-setInterval(function(){
+function pingToPublish() {
     request({uri: config.rssUrl}, function(err, response, body){
 
         // Basic error check
         if(err && response.statusCode !== 200){
             console.log('Request error.');
         }
-        
+
         parser.parseComplete(body);
         var items = handler.dom.items;
         var itemsToPublish = []; // Array
@@ -105,10 +157,12 @@ setInterval(function(){
         itemsToPublish.sort(compareDates);
 
         for(var i in itemsToPublish){
-            console.log(itemsToPublish[i].pubDate + ' ' + itemsToPublish[i].title);
             publishToTwitter(itemsToPublish[i]);
             setLatestPostedItemDate(itemsToPublish[i].pubDate);
         }
     });
-    console.log('\n');
-}, config.intervalLength);
+    console.log(new Date() + '\n');
+}
+
+pingToPublish();
+setInterval(pingToPublish, config.intervalLength);

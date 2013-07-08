@@ -16,7 +16,8 @@
     "oauth" : "0.9.x",
     "qs" : "0.4.x",
     "request" : "2.9.x",
-    "underscore" : "~1.5.0"
+    "underscore" : "~1.5.0",
+    "ent" : "0.0.5"
   },
   "devDependencies": {},
   "optionalDependencies": {},
