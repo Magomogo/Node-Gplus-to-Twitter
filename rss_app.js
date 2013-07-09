@@ -121,7 +121,7 @@ function publishToTwitter(item) {
             console.log('Error: ' + (error.code ? error.code + ' ' + error.message : error.message));
         }
         if (result) {
-            console.log('sent: ' + result.text);
+            console.log('sent: ' + result.text + '\n');
         }
     }
 
