@@ -13,7 +13,7 @@
     "htmlparser" : "1.7.x",
     "jsdom" : "0.2.x",
     "mime" : "1.2.x",
-    "oauth" : "0.9.x",
+    "node-twitter" : "https://github.com/Magomogo/node-twitter/tarball/master",
     "qs" : "0.4.x",
     "request" : "2.9.x",
     "underscore" : "~1.5.0",

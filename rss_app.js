@@ -1,16 +1,17 @@
 var request = require('request'),
-    url = require('url'),
     htmlparser = require('htmlparser'),
     fs = require('fs'),
-    OAuth = require('oauth').OAuth,
+    Twitter = require('node-twitter'),
     _ = require('underscore'),
     ent = require('ent');
 
 var config = {
-    "latestDateFile" : "lastestPostedDate.txt",
+    "latestDateFile": "lastestPostedDate.txt",
 
     "rssUrl": 'http://feeds.bbci.co.uk/news/rss.xml',
-    "intervalLength": 2000,
+    "intervalLength": 10000,
+    "characters_reserved_per_media": 23,
+    "short_url_length": 22,
 
     "twitterConsumerKey": undefined,
     "twitterConsumerSecret": undefined,
@@ -22,13 +23,11 @@ if (fs.existsSync('config.json')) {
     _.extend(config, JSON.parse(fs.readFileSync('config.json')));
 }
 
-oAuth = new OAuth("http://twitter.com/oauth/request_token",
-    "http://twitter.com/oauth/access_token", 
+var twitterRestClient = new Twitter.RestClient(
     config.twitterConsumerKey,
     config.twitterConsumerSecret,
-    "1.0A",
-    null,
-    "HMAC-SHA1"
+    config.twitterAccessToken,
+    config.twitterAccessTokenSecret
 );
 
 // Get date of latest posted article
@@ -58,14 +57,14 @@ function getLatestPostedItemDate() {
 }
 
 // set the date (uses flat file to be replaced with MongoDB)
-function setLatestPostedItemDate(date){
+function setLatestPostedItemDate(date) {
     lastestPostedItemDate = date;
     // write to file
     fs.writeFile(config.latestDateFile, lastestPostedItemDate);
     return true;
 }
 
-function contents(html) {
+function contents(html, link) {
     var handler = new htmlparser.DefaultHandler(),
         parser = new htmlparser.Parser(handler),
         textPart,
@@ -82,7 +81,8 @@ function contents(html) {
                 text = text + element.data;
             }
 
-            if (!firstImage && (element.type === 'tag') && (element.name === 'img')) {
+            if (!firstImage && (element.type === 'tag') && (element.name === 'img') &&
+                element.attribs.src.match(/\.(jpg|jpeg)$/)) {
                 firstImage = element.attribs.src;
             }
 
@@ -95,49 +95,58 @@ function contents(html) {
                     (isBlockElement ? ' ' : '');
             }
         }
-        return text.replace(/^\s+|\s+$/, '');
+        return text.replace(/^\s+|\s+$/gm, '').replace(/ +/gm, ' ');
     }
     textPart = extractText(handler.dom);
 
+    var allowedTextLength = 140 - (firstImage ? config.characters_reserved_per_media + 1 : 0) - 1;
+
+    if (textPart.length > allowedTextLength) {
+        allowedTextLength = allowedTextLength - config.short_url_length - 1;
+        textPart = textPart.substr(0, allowedTextLength) + ' ' + link;
+    }
+
     return {
-        "text": textPart.substr(0, 110),
-        "image": undefined //firstImage
+        "text": textPart,
+        "image": firstImage
     };
 }
 
 // post item to twitter
-function publishToTwitter(item){
-    var contentsToTweet = contents(ent.decode(item.description)),
-        apiUri = 'http://api.twitter.com/1.1/statuses/update' + (contentsToTweet.image ? '_with_media' : '') + '.json',
-        status = {'status': contentsToTweet.text + ' ' + item.link};
+function publishToTwitter(item) {
+    var contentsToTweet = contents(ent.decode(item.description), item.link);
 
-    if (contentsToTweet.image) {
-        // TODO load and post as multipart/form-data
-        status['media[]'] = contentsToTweet.image;
+    function reporter(error, result) {
+        if (error) {
+            console.log('Error: ' + (error.code ? error.code + ' ' + error.message : error.message));
+        }
+        if (result) {
+
+            console.log(result);
+            console.log('sent: ' + result.text);
+        }
     }
 
-    console.log('publishing to twitter');
-    oAuth.post(
-        apiUri,
-        config.twitterAccessToken,
-        config.twitterAccessTokenSecret,
-        status,
-        function(error, data) {
-            if(error) {
-                console.log(require('util').inspect(error));
-            }
-            else {
-                console.log('Posted: ' + contentsToTweet.text);
-            }
-        }
-    );
-}
+    if (contentsToTweet.image) {
 
-function pingToPublish() {
-    request({uri: config.rssUrl}, function(err, response, body){
+        twitterRestClient.statusesUpdateWithMedia(
+            {status: contentsToTweet.text, "mediaExt[]": contentsToTweet.image},
+            reporter
+        );
+
+    } else {
+        twitterRestClient.statusesUpdate(
+            {status: contentsToTweet.text},
+            reporter
+        );
+    }
+
+}
+function pingRss() {
+    request({uri: config.rssUrl}, function (err, response, body) {
 
         // Basic error check
-        if(err && response.statusCode !== 200){
+        if (err && response.statusCode !== 200) {
             console.log('Request error.');
         }
 
@@ -145,10 +154,9 @@ function pingToPublish() {
         var items = handler.dom.items;
         var itemsToPublish = []; // Array
 
-        for(key in items){
-            //console.log(prop + ': ' + items[prop].title + ' ' + items[prop].link + '\n');
+        for (key in items) {
             var itemDate = new Date(items[key].pubDate);
-            if(itemDate > lastestPostedItemDate){
+            if (itemDate > lastestPostedItemDate) {
                 // add to a publish array here
                 itemsToPublish.push(items[key]);
             }
@@ -156,13 +164,12 @@ function pingToPublish() {
         // sort items to publish on pubDate
         itemsToPublish.sort(compareDates);
 
-        for(var i in itemsToPublish){
+        for (var i in itemsToPublish) {
             publishToTwitter(itemsToPublish[i]);
             setLatestPostedItemDate(itemsToPublish[i].pubDate);
         }
     });
-    console.log(new Date() + '\n');
+    console.log('.');
 }
 
-pingToPublish();
-setInterval(pingToPublish, config.intervalLength);
+setInterval(pingRss, config.intervalLength);
