@@ -144,7 +144,7 @@ function pingRss() {
     request({uri: config.rssUrl}, function (err, response, body) {
 
         // Basic error check
-        if (err && response.statusCode !== 200) {
+        if (!response || (err && response.statusCode !== 200)) {
             console.log('Request error.');
         }
 
@@ -167,7 +167,8 @@ function pingRss() {
             setLatestPostedItemDate(itemsToPublish[i].pubDate);
         }
     });
-    console.log('.');
+//    console.log('.');
 }
 
+pingRss();
 setInterval(pingRss, config.intervalLength);
