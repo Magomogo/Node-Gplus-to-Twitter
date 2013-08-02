@@ -1,8 +1,7 @@
 var request = require('request'),
     fs = require('fs'),
     Twitter = require('node-twitter'),
-    _ = require('underscore'),
-    ent = require('ent');
+    _ = require('underscore');
 
 var config = {
     "latestDateFile": "lastestPostedDate.txt",
@@ -57,7 +56,7 @@ function publishToTwitter(item, done) {
 
     function reporter(error, result) {
         if (error) {
-            console.log('Twitter error: ' + (error.code ? error.code + ' ' + error.message : error.message));
+            console.log(new Date() + '. Twitter error: ' + (error.code ? error.code + ' ' + error.message : error.message));
         }
         if (result) {
             console.log('sent: ' + result.text + '\n');
@@ -65,9 +64,6 @@ function publishToTwitter(item, done) {
         setLatestPostedItemDate(item.published);
         done();
     }
-
-    console.log('try to publish...');
-    console.log(item);
 
     if (item.image) {
 
@@ -144,8 +140,6 @@ function ping() {
         });
 
     }
-
-    console.log('ping!');
 }
 
 ping();
