@@ -124,7 +124,7 @@ function ping() {
                 console.log(new Date() + '. Request error.');
                 console.log(err);
             } else {
-                var items = json.items, i;
+                var items = json.items || [], i;
 
                 for (i = 0; i < items.length; i++) {
                     var itemDate = new Date(items[i].published);
