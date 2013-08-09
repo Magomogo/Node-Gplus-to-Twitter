@@ -91,11 +91,12 @@ function convertGoogleItem(item) {
     var linkGplus = item.title.match(/\.\.\.$/) ||
             (item.object.attachments && (['video', 'photo'].indexOf(item.object.attachments[0]['objectType']) < 0));
 
-    var tweet = item.title.substr(
+    var tweet = (item.annotation || item.title).substr(
         0,
         140 -
-            (linkGplus || embedVideo ? config.short_url_length + 1 : 0) -
-            (embedImage ? config.characters_reserved_per_media + 1 : 0)
+            (linkGplus ? config.short_url_length + 2 : 0) -
+            (embedVideo ? config.short_url_length + 2 : 0) -
+            (embedImage ? config.characters_reserved_per_media + 2 : 0)
         ) +
         (embedVideo ? ' ' + embedVideo : '') + (linkGplus ? ' ' + item.url : '');
 
