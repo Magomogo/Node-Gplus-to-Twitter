@@ -36,6 +36,10 @@ var twitterRestClient = new Twitter.RestClient(
 // Get date of latest posted article
 var lastestPostedItemDate = getLatestPostedItemDate(), itemsToPublish = [];
 
+if (lastestPostedItemDate == 'Invalid Date') {
+    throw 'Latest posted date is invalid';
+}
+
 // get the date (uses flat file to be replaced with MongoDB)
 function getLatestPostedItemDate() {
     return new Date(
