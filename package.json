@@ -1,23 +1,17 @@
 {
-  "author": "Pete X. Graham",
+  "author": "Maxim Gnatenko",
   "name": "Node-Rss-to-Twitter",
-  "description": "Node.js app to push new rss items to twitter",
+  "description": "Node.js app to push new G+ items to twitter",
   "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "git://github.com/pxg/Node-Rss-to-Twitter.git"
+    "url": "git://github.com/Magomogo/Node-Gplus-to-Twitter"
   },
   "dependencies": {
-    "express" : "2.5.x",
-    "formidable" : "1.0.x",
-    "htmlparser" : "1.7.x",
-    "jsdom" : "0.2.x",
-    "mime" : "1.2.x",
     "node-twitter" : "https://github.com/Magomogo/node-twitter/tarball/master",
-    "qs" : "0.4.x",
     "request" : "2.9.x",
     "underscore" : "~1.5.0",
-    "ent" : "0.0.5"
+    "html-to-text" : "~0.0.6"
   },
   "devDependencies": {},
   "optionalDependencies": {},

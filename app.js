@@ -1,7 +1,8 @@
 var request = require('request'),
     fs = require('fs'),
     Twitter = require('node-twitter'),
-    _ = require('underscore');
+    _ = require('underscore'),
+    htmlToText = require('html-to-text');
 
 var config = {
     "latestDateFile": "lastestPostedDate.txt",
@@ -85,6 +86,12 @@ function publishToTwitter(item, done) {
 
 }
 
+function tweetLimit(embedVideo, embedImage, linkGplus) {
+    return 140 - (embedVideo ? config.short_url_length + 1 : 0) -
+        (embedImage ? config.characters_reserved_per_media + 1 : 0) -
+        (linkGplus ? config.short_url_length + 2 : 0); // http[s] takes one letter more
+}
+
 function convertGoogleItem(item) {
     var embedVideo = item.object.attachments && item.object.attachments[0]['objectType'] === 'video' ?
         item.object.attachments[0]['url'] : undefined;
@@ -92,16 +99,21 @@ function convertGoogleItem(item) {
     var embedImage = item.object.attachments && item.object.attachments[0].fullImage ?
         item.object.attachments[0].fullImage.url : undefined;
 
-    var linkGplus = item.title.match(/\.\.\.$/) ||
-            (item.object.attachments && (['video', 'photo'].indexOf(item.object.attachments[0]['objectType']) < 0));
+    var linkGplus = item.object.attachments &&
+        (['video', 'photo'].indexOf(item.object.attachments[0]['objectType']) < 0);
 
-    var tweet = (item.annotation || item.title).substr(
-        0,
-        140 -
-            (linkGplus ? config.short_url_length + 2 : 0) -
-            (embedVideo ? config.short_url_length + 2 : 0) -
-            (embedImage ? config.characters_reserved_per_media + 2 : 0)
-        ) +
+    var text = htmlToText.fromString(item.object.content.replace(/<[^>]*>?/g, ''), {wordwrap: 140});
+
+    if (!text.length) {
+        // nothing to say
+        return undefined;
+    }
+
+    if (text.length > tweetLimit(embedVideo, embedImage, linkGplus)) {
+        linkGplus = true;
+    }
+
+    var tweet = text.substr(0, tweetLimit(embedVideo, embedImage, linkGplus)) +
         (embedVideo ? ' ' + embedVideo : '') + (linkGplus ? ' ' + item.url : '');
 
     return {
@@ -132,11 +144,14 @@ function ping() {
                 var items = json.items || [], i;
 
                 for (i = 0; i < items.length; i++) {
-                    var itemDate = new Date(items[i].published);
+                    var itemDate = new Date(items[i].published), converted;
 
                     if (itemDate > lastestPostedItemDate) {
-                        // add to a publish array here
-                        itemsToPublish.push(convertGoogleItem(items[i]));
+                        converted = convertGoogleItem(items[i]);
+
+                        if (converted) {
+                            itemsToPublish.push(converted);
+                        }
                     }
                 }
 
