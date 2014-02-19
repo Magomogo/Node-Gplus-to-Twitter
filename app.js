@@ -96,27 +96,31 @@ function tweetLimit(embedVideo, embedImage, linkGplus) {
 
 function convertGoogleItem(item) {
     var embedVideo = item.object.attachments && item.object.attachments[0]['objectType'] === 'video' ?
-        item.object.attachments[0]['url'] : undefined;
+            item.object.attachments[0]['url'] : undefined,
 
-    var embedImage = item.object.attachments && item.object.attachments[0].fullImage ?
-        item.object.attachments[0].fullImage.url : undefined;
+        embedImage = item.object.attachments && item.object.attachments[0].fullImage ?
+            item.object.attachments[0].fullImage.url : undefined,
 
-    var linkGplus = item.object.attachments &&
-        (['video', 'photo'].indexOf(item.object.attachments[0]['objectType']) < 0);
+        link = item.object.attachments &&
+            (['video', 'photo'].indexOf(item.object.attachments[0]['objectType']) < 0),
 
-    var text = htmlToText.fromString(item.object.content.replace(/<[^>]*>?/g, ''), {wordwrap: 140});
+        text = htmlToText.fromString(item.object.content.replace(/<[^>]*>?/g, ''), {wordwrap: 140}),
+
+        linkUrl = item.object.attachments && item.object.attachments[0]['objectType'] === 'article' ?
+            item.object.attachments[0]['url'] : item.url;
 
     if (!text.length) {
         // nothing to say
         return undefined;
     }
 
-    if (text.length > tweetLimit(embedVideo, embedImage, linkGplus)) {
-        linkGplus = true;
+    if (text.length > tweetLimit(embedVideo, embedImage, link)) {
+        link = true;
+        linkUrl = item.url;
     }
 
-    var tweet = text.substr(0, tweetLimit(embedVideo, embedImage, linkGplus)) +
-        (embedVideo ? ' ' + embedVideo : '') + (linkGplus ? ' ' + item.url : '');
+    var tweet = text.substr(0, tweetLimit(embedVideo, embedImage, link)) +
+        (embedVideo ? ' ' + embedVideo : '') + (link ? ' ' + linkUrl : '');
 
     return {
         text: tweet,
