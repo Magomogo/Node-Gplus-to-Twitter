@@ -4,4 +4,4 @@ Installation:
  - Setup Google API
  - Requires the creation of a twitter app
  - Twitter app OAuth details need to be added to the script
- - The file lastestPostedDate.txt needs to be writable. The script will publish any stories with pubDate after this
+ - The file latestPostedDate.txt needs to be writable. The script will publish any stories with pubDate after this

@@ -1,5 +1,5 @@
 /node_modules/*
 /.idea
-/lastestPostedDate.json
+/latestPostedDate.json
 /config.json
 /config-dev.json

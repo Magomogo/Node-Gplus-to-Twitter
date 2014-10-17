@@ -4,7 +4,7 @@ var repost = require('repost'),
     fs = require('fs'),
     _ = require('underscore'),
     config = {
-        "latestDateFile": "./lastestPostedDate.json",
+        "latestDateFile": "./latestPostedDate.json",
 
         "googleUserId": undefined,
         "googleAPIKey": undefined,
