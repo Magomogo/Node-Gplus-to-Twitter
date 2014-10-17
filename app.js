@@ -17,7 +17,7 @@ var repost = require('repost'),
     latestPostedDate;
 
 if (fs.existsSync(__dirname + '/config.json')) {
-    _.extend(config, JSON.parse(fs.readFileSync(__dirname + '/config-dev.json')));
+    _.extend(config, JSON.parse(fs.readFileSync(__dirname + '/config.json')));
 }
 
 latestPostedDate = new Date(
