@@ -4,7 +4,7 @@ var repost = require('repost'),
     fs = require('fs'),
     _ = require('underscore'),
     config = {
-        "latestDateFile": "./latestPostedDate.json",
+        "latestDateFile": __dirname + '/latestPostedDate.json',
 
         "googleUserId": undefined,
         "googleAPIKey": undefined,
@@ -16,8 +16,8 @@ var repost = require('repost'),
     },
     latestPostedDate;
 
-if (fs.existsSync('config.json')) {
-    _.extend(config, JSON.parse(fs.readFileSync('config-dev.json')));
+if (fs.existsSync(__dirname + '/config.json')) {
+    _.extend(config, JSON.parse(fs.readFileSync(__dirname + '/config-dev.json')));
 }
 
 latestPostedDate = new Date(

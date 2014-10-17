@@ -8,7 +8,8 @@
     "url": "git://github.com/Magomogo/Node-Gplus-to-Twitter"
   },
   "dependencies": {
-    "repost": "^1.0.0"
+    "repost": "^1.0.0",
+    "underscore": "^1.7.0"
   },
   "devDependencies": {},
   "optionalDependencies": {},
