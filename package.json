@@ -2,7 +2,7 @@
   "author": "Maxim Gnatenko",
   "name": "Node-Plus-to-Twitter",
   "description": "Node.js app to push new G+ items to twitter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "git://github.com/Magomogo/Node-Gplus-to-Twitter"
